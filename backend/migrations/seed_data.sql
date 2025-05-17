@@ -32,6 +32,9 @@ VALUES
    
   ('Administrative Services', 'Issues related to government documentation, processes, or services', 
    (SELECT id FROM agencies WHERE name = 'Ministry of Local Government (MINALOC)'),
+   CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  ('General', 'General inquiries or issues not covered by other categories', 
+   (SELECT id FROM agencies WHERE name = 'Ministry of Local Government (MINALOC)'), -- Assign to a default agency
    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 -- User data: Sample admin users (PLACEHOLDER passwords - not for production use!)

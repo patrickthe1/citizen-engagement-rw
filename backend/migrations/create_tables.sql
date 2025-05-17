@@ -1,9 +1,9 @@
 -- For development reset only - uncomment these DROP statements when needed
--- DROP TABLE IF EXISTS submissions;
--- DROP TABLE IF EXISTS users;
--- DROP TABLE IF EXISTS categories;
--- DROP TABLE IF EXISTS agencies;
-
+DROP TABLE IF EXISTS submissions;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS categories;
+DROP TABLE IF EXISTS agencies;
+    
 -- Create agencies table
 CREATE TABLE agencies (
     id SERIAL PRIMARY KEY,
@@ -43,6 +43,7 @@ CREATE TABLE submissions (
     subject VARCHAR(255),
     description TEXT NOT NULL,
     citizen_contact VARCHAR(255),
+    language_preference VARCHAR(50) DEFAULT 'english', -- Added language_preference column
     status VARCHAR(50) DEFAULT 'Received' CHECK (status IN ('Received', 'In Progress', 'Resolved', 'Closed')),
     admin_response TEXT,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,

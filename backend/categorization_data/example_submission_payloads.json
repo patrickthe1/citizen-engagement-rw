@@ -1,0 +1,40 @@
+[
+  {
+    "description": "There has been no water in our area for three days. The pipe near the main road seems broken. Location: Kimihurura, KG 123 St.",
+    "category_suggestion_by_user": "Utilities",
+    "contact_info": "0781234567",
+    "language_preference": "english"
+  },
+  {
+    "description": "Umuhanda wo mu gace kacu wangiritse cyane, imodoka ntizibasha kuhanyura neza. Hari ibyobo binini cyane.",
+    "category_suggestion_by_user": "Transportation",
+    "contact_info": "0722345678",
+    "language_preference": "kinyarwanda"
+  },
+  {
+    "description": "I waited for 5 hours at the Kacyiru Health Center but could not see a doctor. Many patients were waiting and only one doctor was available.",
+    "contact_info": "test@example.com",
+    "language_preference": "english"
+  },
+  {
+    "description": "Abarimu bo mu ishuri rya Muhazi ntibaza kenshi. Abana bacu ntibiga neza kubera kubura abarimu.",
+    "category_suggestion_by_user": "Education",
+    "contact_info": "0738765432",
+    "language_preference": "kinyarwanda"
+  },
+  {
+    "description": "",
+    "contact_info": "0781234567",
+    "language_preference": "english"
+  },
+  {
+    "description": "I applied for my ID card three months ago and still haven't received it. When I went to check at the sector office, they said my application was lost.",
+    "category_suggestion_by_user": "AdministrativeServices",
+    "language_preference": "english"
+  },
+  {
+    "description": "Amashanyarazi aracika buri munsi mu gace kacu. Biratugoye cyane gukora no kwiga nijoro.",
+    "contact_info": "0798765432",
+    "language_preference": "kinyarwanda"
+  }
+]

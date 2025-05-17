@@ -1,8 +1,25 @@
-// Submission Model
-const { DataTypes } = require('sequelize');
-const { sequelize } = require('../config/database');
+const { DataTypes, Model } = require('sequelize');
 
-const Submission = sequelize.define('Submission', {
+module.exports = (sequelize) => {
+  class Submission extends Model {
+    /**
+     * Helper method for defining associations.
+     * This method is not a part of Sequelize lifecycle.
+     * The `models/index` file will call this method automatically.
+     */
+    static associate(models) {
+        Submission.belongsTo(models.Category, {
+            foreignKey: 'category_id',
+            as: 'category'
+        });
+        Submission.belongsTo(models.Agency, {
+            foreignKey: 'agency_id',
+            as: 'agency'
+        });
+    }
+  }
+
+  Submission.init({
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
@@ -15,11 +32,17 @@ const Submission = sequelize.define('Submission', {
     },
     category_id: {
         type: DataTypes.INTEGER,
-        allowNull: true
+        allowNull: true,
+        references: { model: 'categories', key: 'id' }, // Changed to lowercase
+        onUpdate: 'CASCADE',
+        onDelete: 'SET NULL'
     },
     agency_id: {
         type: DataTypes.INTEGER,
-        allowNull: true
+        allowNull: true,
+        references: { model: 'agencies', key: 'id' }, // Changed to lowercase
+        onUpdate: 'CASCADE',
+        onDelete: 'SET NULL'
     },
     subject: {
         type: DataTypes.STRING
@@ -29,7 +52,13 @@ const Submission = sequelize.define('Submission', {
         allowNull: false
     },
     citizen_contact: {
-        type: DataTypes.STRING
+        type: DataTypes.STRING,
+        allowNull: false,
+    },
+    language_preference: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        defaultValue: 'english'
     },
     status: {
         type: DataTypes.STRING,
@@ -42,11 +71,14 @@ const Submission = sequelize.define('Submission', {
     admin_response: {
         type: DataTypes.TEXT
     }
-}, {
-    tableName: 'submissions',
+  }, {
+    sequelize, // sequelize instance is now passed by models/index.js
+    modelName: 'Submission',
+    tableName: 'submissions', // Changed to lowercase
     timestamps: true,
     createdAt: 'created_at',
     updatedAt: 'updated_at'
-});
+  });
 
-module.exports = Submission;
+  return Submission;
+};

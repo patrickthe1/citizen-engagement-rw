@@ -1,29 +1,66 @@
 // Category Model
-const { DataTypes } = require('sequelize');
+const { DataTypes, Model } = require('sequelize');
 const { sequelize } = require('../config/database');
 
-const Category = sequelize.define('Category', {
+module.exports = (sequelize, DataTypes) => {
+  class Category extends Model {
+    /**
+     * Helper method for defining associations.
+     * This method is not a part of Sequelize lifecycle.
+     * The `models/index` file will call this method automatically.
+     */
+    static associate(models) {
+      Category.hasMany(models.Submission, {
+        foreignKey: 'category_id',
+        as: 'submissions',
+      });
+      Category.belongsTo(models.Agency, {
+        foreignKey: 'agency_id',
+        as: 'agency',
+      });
+    }
+  }
+  Category.init({
     id: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-        autoIncrement: true
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+      allowNull: false,
     },
     name: {
-        type: DataTypes.STRING,
-        allowNull: false
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true,
     },
     description: {
-        type: DataTypes.TEXT
+      type: DataTypes.TEXT,
+      allowNull: true,
     },
     agency_id: {
-        type: DataTypes.INTEGER,
-        allowNull: true
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: 'agencies', // Changed to lowercase
+        key: 'id',
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'SET NULL',
+    },
+    createdAt: {
+      allowNull: false,
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW
+    },
+    updatedAt: {
+      allowNull: false,
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW
     }
-}, {
-    tableName: 'categories',
-    timestamps: true,
-    createdAt: 'created_at',
-    updatedAt: 'updated_at'
-});
-
-module.exports = Category;
+  }, {
+    sequelize,
+    modelName: 'Category',
+    tableName: 'categories', // Changed to lowercase
+    timestamps: true
+  });
+  return Category;
+};

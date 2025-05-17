@@ -1,0 +1,77 @@
+{
+  "english": {
+    "Water Services": [
+      "water outage", "no water", "water shortage", "dirty water", "water quality", "contaminated water", "high water bill",
+      "pipe leakage", "water pipe broken", "sewage", "sewage overflow", "drainage issue"
+    ],
+    "Electricity Services": [
+      "electricity outage", "power cut", "no electricity", "electric shock", "voltage fluctuation", "power surge",
+      "blackout", "brownout", "electricity bill", "high electricity cost", "meter problem"
+    ],
+    "Public Transportation": [
+      "bus delay", "no bus", "bus shortage", "overcrowded bus", "public transport inadequate",
+      "taxi overcharge", "unsafe driving", "reckless driver", "road accident", "traffic jam",
+      "pothole", "damaged road", "poor road condition", "bridge unsafe", "road construction",
+      "public transport schedule", "bus stop issue", "transport cost", "fare increase",
+      "no transport available", "road safety", "speeding vehicle", "unpaved road", "flooding road"
+    ],
+    "Healthcare Services": [
+      "long wait time", "hospital queue", "medicine shortage", "expensive medication", "no medication available",
+      "rude staff", "unprofessional doctor", "clinic closed", "unhygienic facility", "poor sanitation",
+      "ambulance delay", "no ambulance", "emergency service", "healthcare cost", "insurance issue",
+      "medical test", "laboratory result delay", "wrong diagnosis", "vaccination problem",
+      "specialist unavailable", "referral issue", "medical error", "maternal care", "child healthcare"
+    ],
+    "Education Services": [
+      "teacher absent", "school overcrowded", "high school fees", "lack of textbooks", "poor teaching quality",
+      "school facilities", "classroom condition", "school sanitation", "teacher qualification", "education quality",
+      "school accessibility", "education cost", "scholarship problem", "exam issue", "grading problem",
+      "school safety", "bullying", "school discipline", "curriculum issue", "teaching language",
+      "digital learning", "ICT in school", "school management", "education certificate"
+    ],
+    "Administrative Services": [
+      "waste collection", "garbage", "trash not collected", "sanitation", "utility bill", "meter reading",
+      "document delay", "ID card problem", "certificate issue", "permit delay", "license application",
+      "long queue government office", "rude government official", "corruption", "bribe request", "unfair treatment",
+      "application rejected", "unclear procedure", "service charge", "administrative error",
+      "Irembo portal problem", "online service down", "system failure", "information request",
+      "complaint handling", "administrative appeal", "government feedback", "service delivery issue"
+    ]
+  },
+  "kinyarwanda": {
+    "Water Services": [
+      "amazi yabuze", "nta mazi", "kubura amazi", "amazi mabi", "ubuziranenge bw'amazi", "amazi yanduye",
+      "fagitire y'amazi iri hejuru", "umwobo w'amazi", "imivu"
+    ],
+    "Electricity Services": [
+      "umuriro wabuze", "gucika umuriro", "nta mashanyarazi", "gukangwa n'umuriro",
+      "umuriro udakora neza", "konti y'amashanyarazi", "ikiguzi cy'amashanyarazi", "ikibazo cy'imiyoboro"
+    ],
+    "Public Transportation": [
+      "imodoka yakererewe", "nta modoka", "kubura imodoka", "imodoka yuzuye cyane", "gutwara abantu bigoye",
+      "ikiguzi kinini cya tagisi", "gutwara nabi", "impanuka yo mu muhanda", "umuhanda wangiritse",
+      "umuhanda mubi", "ibyobo mu muhanda", "amateme atizewe", "ikiguzi cyo gutwara abantu",
+      "kubura uburyo bwo gutwara abantu", "umuhanda utekanye", "umuhanda wuzuye", "guhagarara kw'imodoka"
+    ],
+    "Healthcare Services": [
+      "gutinda kwa muganga", "kubura imiti", "imiti ihenze", "nta miti ihari", "serivisi mbi kwa muganga",
+      "abakozi batameze neza", "isuku nke mu bitaro", "ambulansi ntiyaje", "kubura ambulansi", "ikiguzi cyo kwivuza",
+      "ikibazo cy'ubwishingizi", "ibizamini", "gukerererwa kw'ibisubizo", "indwara", "kubura inzobere",
+      "uburenganzira bwo kwivuza", "ikosa mu buvuzi", "ubuvuzi bw'abana", "ubuvuzi bw'ababyeyi"
+    ],
+    "Education Services": [
+      "mwarimu adahari", "ishuri ryuzuye", "amafaranga y'ishuri menshi", "kubura ibitabo", "uburezi buke",
+      "ibikoresho by'ishuri", "imiterere y'ishuri", "isuku mu ishuri", "inyigisho", "ikiguzi cy'uburezi",
+      "ubushobozi bw'abarimu", "ikibazo cy'ibizamini", "umutekano mu ishuri", "imyitwarire mibi", "ubuyobozi bw'ishuri",
+      "impamyabushobozi", "ikibazo mu ishuri", "ikoranabuhanga mu ishuri", "guhindura igihugu ishuri"
+    ],
+    "Administrative Services": [
+      "imyanda", "isuku nke", "umusarani wuzuye", "gusohora imyanda",
+      "gukerererwa kw'inyandiko", "ikibazo cy'irangamuntu", "ikibazo cy'icyemezo", "gukerererwa uruhushya",
+      "uruhushya rwo gutwara", "umurongo muremure ku biro bya leta", "umukozi wa leta utameze neza", "ruswa",
+      "gusaba ruswa", "ivangura", "gusaba kwangwa", "uburyo butumvikana", "ikiguzi cya serivisi",
+      "ikosa mu buyobozi", "ikibazo cya Irembo", "serivisi zo kuri interineti zidakora", "gusaba amakuru",
+      "imicungire y'ibibazo", "kujurira", "ibisubizo bya leta", "serivisi za leta"
+    ]
+  }
+}

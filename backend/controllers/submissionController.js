@@ -1,96 +1,171 @@
 const { Submission, Category, Agency } = require('../models');
 const { generateTicketId } = require('../utils/helpers');
+const { categorizeSubmission, validateSubmission, getCategoryAndAgencyDetails } = require('../utils/categorizationAndValidation');
 
 // Controller for submission-related endpoints
-const submissionController = {    // POST /api/submissions - Create a new submission
+const submissionController = {
+    // POST /api/submissions - Create a new submission
     createSubmission: async (req, res) => {
         try {
-            // TODO: Implement input validation
-            const { category_id, subject, description, citizen_contact } = req.body;
-            
-            // Implementation of categorization and routing logic
-            // Look up the agency_id based on the category_id
-            const category = await Category.findByPk(category_id, {
-                include: [{ model: Agency, attributes: ['id', 'name'] }]
-            });
-            const agency_id = category && category.Agency ? category.Agency.id : null;
-            
-            // Generate a unique ticket ID (helper function to be implemented)
-            const ticket_id = await generateTicketId();
-            
-            // Create submission in database
-            // TODO: Save submission to DB using ORM
-            const submission = await Submission.create({
-                ticket_id,
-                category_id,
-                agency_id,
+            // 1. Validate input
+            const { error, value } = validateSubmission(req.body);
+            if (error) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Validation Error',
+                    errors: error.details.map(d => d.message)
+                });
+            }
+
+            const { subject, description, citizen_contact, language_preference } = value;
+
+            // 2. Implement Simple AI Categorization
+            // This is a basic keyword matching approach.
+            // Limitations:
+            // - Relies on a predefined keyword list.
+            // - May not be accurate for nuanced descriptions.
+            // - Does not understand context beyond keyword presence.
+            // - Scoring is simplistic.
+            // For production, a more robust NLP solution (e.g., using machine learning models) would be better.
+            const determinedCategoryName = categorizeSubmission(description, language_preference);
+            let category_id = null;
+            let agency_id = null;
+            let categoryDetails = null;
+
+            if (determinedCategoryName) {
+                categoryDetails = await getCategoryAndAgencyDetails(determinedCategoryName);
+                if (categoryDetails) {
+                    category_id = categoryDetails.category_id;
+                    agency_id = categoryDetails.agency_id;
+                }
+            }
+
+            // If no category is matched or details not found, assign to a default category/agency.
+            // For MVP, we'll try to find a 'General' category or leave it null if not set up.
+            // This requires 'General' category and its agency to be in the DB.
+            if (!category_id) {
+                const defaultCategoryDetails = await getCategoryAndAgencyDetails('General'); // Assuming 'General' category exists
+                if (defaultCategoryDetails) {
+                    category_id = defaultCategoryDetails.category_id;
+                    agency_id = defaultCategoryDetails.agency_id;
+                    console.log("Submission assigned to default 'General' category.");
+                } else {
+                    console.warn("Default 'General' category not found. Submission will have no category/agency.");
+                    // Depending on requirements, you might return an error or proceed without category/agency
+                }
+            }
+
+            // 3. Generate unique ticket_id
+            let ticket_id;
+            let isUnique = false;
+            let attempts = 0;
+            const maxAttempts = 5; // Prevent infinite loop in unlikely scenario of constant collisions
+
+            do {
+                ticket_id = await generateTicketId(); // Added await here
+                const existingSubmission = await Submission.findOne({ where: { ticket_id } });
+                if (!existingSubmission) {
+                    isUnique = true;
+                }
+                attempts++;
+            } while (!isUnique && attempts < maxAttempts);
+
+            if (!isUnique) {
+                // This is highly unlikely with a good ticket ID generation strategy
+                console.error('Failed to generate a unique ticket ID after multiple attempts.');
+                return res.status(500).json({
+                    success: false,
+                    message: 'Failed to generate a unique ticket ID. Please try again.'
+                });
+            }
+
+            // 4. Set status
+            const status = 'Received';
+
+            // 5. Save submission to DB
+            const newSubmission = await Submission.create({
                 subject,
                 description,
                 citizen_contact,
-                status: 'Received'
+                category_id, 
+                agency_id,  
+                ticket_id,
+                status,
+                submission_date: new Date(),
+                language_preference // Ensure language_preference from validated input is passed
             });
-            
-            // Return success response with ticket ID
+
+            // 6. Return success response
             return res.status(201).json({
                 success: true,
-                message: 'Submission created successfully',
-                ticket_id: submission.ticket_id
+                message: 'Submission received successfully.',
+                ticketId: newSubmission.ticket_id
             });
-        } catch (error) {
-            // TODO: Implement error handling
-            console.error('Error creating submission:', error);
+
+        } catch (dbError) {
+            console.error('Error creating submission:', dbError);
+            // Check for specific Sequelize errors if needed, e.g., validation errors from model
+            if (dbError.name === 'SequelizeValidationError') {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Database Validation Error',
+                    errors: dbError.errors.map(e => e.message)
+                });
+            }
             return res.status(500).json({
                 success: false,
-                message: 'Failed to create submission',
-                error: error.message
+                message: 'Internal Server Error while creating submission.',
+                error: process.env.NODE_ENV === 'development' ? dbError.message : undefined
             });
         }
     },
-    
+
     // GET /api/submissions/:ticketId - Get a submission by ticket ID
     getSubmissionByTicketId: async (req, res) => {
         try {
             const { ticketId } = req.params;
-            
-            // TODO: Validate ticketId format
-            
-            // TODO: Retrieve submission from DB using ORM
+
+            if (!ticketId) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Ticket ID is required.'
+                });
+            }
+
             const submission = await Submission.findOne({
                 where: { ticket_id: ticketId },
                 include: [
-                    { model: Category, attributes: ['name'] },
-                    { model: Agency, attributes: ['name'] }
+                    {
+                        model: Category,
+                        as: 'category', // Ensure 'as' alias matches your model definition
+                        attributes: ['id', 'name', 'description']
+                    },
+                    {
+                        model: Agency,
+                        as: 'agency', // Ensure 'as' alias matches your model definition
+                        attributes: ['id', 'name', 'contact_information']
+                    }
                 ]
             });
-            
+
             if (!submission) {
                 return res.status(404).json({
                     success: false,
-                    message: 'Submission not found'
+                    message: 'Submission not found.'
                 });
             }
-            
-            // Return submission data with status info
+
             return res.status(200).json({
                 success: true,
-                submission: {
-                    ticket_id: submission.ticket_id,
-                    subject: submission.subject,
-                    description: submission.description,
-                    status: submission.status,
-                    category: submission.Category ? submission.Category.name : null,
-                    agency: submission.Agency ? submission.Agency.name : null,
-                    created_at: submission.created_at,
-                    admin_response: submission.admin_response,
-                }
+                data: submission
             });
+
         } catch (error) {
-            // TODO: Implement error handling
-            console.error('Error retrieving submission:', error);
+            console.error('Error fetching submission by ticket ID:', error);
             return res.status(500).json({
                 success: false,
-                message: 'Failed to retrieve submission',
-                error: error.message
+                message: 'Internal Server Error while fetching submission.',
+                error: process.env.NODE_ENV === 'development' ? error.message : undefined
             });
         }
     }
