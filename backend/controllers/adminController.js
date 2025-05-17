@@ -1,4 +1,14 @@
 const { User, Submission, Agency, Category } = require('../models');
+const Joi = require('joi'); // For status validation
+
+// Allowed submission statuses
+const ALLOWED_STATUSES = ['Received', 'In Progress', 'Resolved', 'Closed'];
+
+// Validation schema for submission status update
+const updateSubmissionStatusSchema = Joi.object({
+    status: Joi.string().valid(...ALLOWED_STATUSES).required(),
+    admin_response: Joi.string().allow('', null).max(5000) // Optional, can be empty or null
+});
 
 // Controller for admin-related endpoints
 const adminController = {
@@ -13,7 +23,7 @@ const adminController = {
             const user = await User.findOne({ 
                 where: { username },
                 include: [
-                    { model: Agency, attributes: ['id', 'name'] }
+                    { model: Agency, as: 'agency', attributes: ['id', 'name'] } // Added as: 'agency'
                 ]
             });
             
@@ -26,94 +36,127 @@ const adminController = {
             
             // TODO: Implement proper password check with hashing
             // This is just a placeholder for the MVP structure
-            if (user.password_hash !== password) {
+            if (user.password_hash !== password) { // In a real app, use bcrypt.compare
                 return res.status(401).json({
                     success: false,
                     message: 'Invalid credentials'
                 });
             }
             
-            // TODO: Generate JWT token
+            // TODO: Generate JWT token and set it in req.user for subsequent requests
+            // For now, we'll simulate req.user for other admin functions based on this login.
+            // This is NOT how it would work in production.
+            req.user = { // SIMULATING req.user for Phase 2 testing
+                id: user.id,
+                username: user.username,
+                agency_id: user.agency_id, // Crucial for Phase 2
+                role: user.role
+            };
             
             return res.status(200).json({
                 success: true,
-                message: 'Login successful',
+                message: 'Login successful (simulation for Phase 2)',
                 user: {
                     id: user.id,
                     username: user.username,
                     role: user.role,
-                    agency: user.Agency ? {
-                        id: user.Agency.id,
-                        name: user.Agency.name
+                    agency: user.agency ? { // Changed from user.Agency to user.agency to match alias
+                        id: user.agency.id,
+                        name: user.agency.name
                     } : null
                 }
                 // token: 'jwt-token-placeholder' // To be implemented
             });
         } catch (error) {
-            // TODO: Implement error handling
             console.error('Error during login:', error);
             return res.status(500).json({
                 success: false,
                 message: 'Login failed',
-                error: error.message
+                error: process.env.NODE_ENV === 'development' ? error.message : 'Internal Server Error'
             });
         }
     },
     
-    // GET /api/admin/submissions - Get all submissions (admin only)
+    // GET /api/admin/submissions - Get submissions for the admin's agency
     getAllSubmissions: async (req, res) => {
+           // TEMPORARY FOR TESTING - REMOVE LATER
+    // Simulate a RURA admin being logged in
+    req.user = { agency_id: 2 }; // Assuming RURA's agency_id is 2. Adjust as per your seed_data.sql
+    // END TEMPORARY
+        // ASSUMPTION: req.user.agency_id is available from auth middleware
+        if (!req.user || req.user.agency_id === undefined) { // Check if agency_id is undefined or null
+            // This check is more for development; proper auth middleware would handle unauthorized access.
+            console.error('Auth Error: req.user.agency_id not available. Ensure login simulation or actual auth is working.');
+            return res.status(401).json({
+                success: false,
+                message: 'Unauthorized: Admin agency information not available.'
+            });
+        }
+
+        const adminAgencyId = req.user.agency_id;
+
         try {
-            // TODO: Implement authentication middleware
-            // TODO: Implement agency filtering based on logged in user's agency
-            
-            // For MVP structure, getting all submissions
-            // TODO: Retrieve submissions from DB using ORM with filtering
             const submissions = await Submission.findAll({
+                where: { agency_id: adminAgencyId }, // Filter by admin's agency_id
                 include: [
-                    { model: Category, attributes: ['name'] },
-                    { model: Agency, attributes: ['name'] }
+                    {
+                        model: Category,
+                        as: 'category', // Ensure alias matches model association
+                        attributes: ['id', 'name']
+                    },
+                    {
+                        model: Agency,
+                        as: 'agency', // Ensure alias matches model association
+                        attributes: ['id', 'name']
+                    }
                 ],
                 order: [['created_at', 'DESC']]
             });
             
             return res.status(200).json({
                 success: true,
-                submissions: submissions.map(sub => ({
-                    id: sub.id,
-                    ticket_id: sub.ticket_id,
-                    subject: sub.subject,
-                    description: sub.description,
-                    status: sub.status,
-                    category: sub.Category ? sub.Category.name : null,
-                    agency: sub.Agency ? sub.Agency.name : null,
-                    citizen_contact: sub.citizen_contact,
-                    created_at: sub.created_at,
-                    updated_at: sub.updated_at,
-                    admin_response: sub.admin_response
-                }))
+                data: submissions
             });
         } catch (error) {
-            // TODO: Implement error handling
-            console.error('Error retrieving submissions:', error);
+            console.error('Error retrieving submissions for admin:', error);
             return res.status(500).json({
                 success: false,
-                message: 'Failed to retrieve submissions',
-                error: error.message
+                message: 'Failed to retrieve submissions.',
+                error: process.env.NODE_ENV === 'development' ? error.message : 'Internal Server Error'
             });
         }
     },
     
     // PUT /api/admin/submissions/:id - Update submission status/response (admin only)
     updateSubmission: async (req, res) => {
+
+           // TEMPORARY FOR TESTING - REMOVE LATER
+    // Simulate a RURA admin being logged in
+    req.user = { agency_id: 2 }; // Assuming RURA's agency_id is 2. Adjust as per your seed_data.sql
+    // END TEMPORARY
+        // ASSUMPTION: req.user.agency_id is available from auth middleware
+        if (!req.user || req.user.agency_id === undefined) { // Check if agency_id is undefined or null
+            console.error('Auth Error: req.user.agency_id not available. Ensure login simulation or actual auth is working.');
+            return res.status(401).json({
+                success: false,
+                message: 'Unauthorized: Admin agency information not available.'
+            });
+        }
+        const adminAgencyId = req.user.agency_id;
+        const { id } = req.params;
+
         try {
-            // TODO: Implement authentication middleware
-            const { id } = req.params;
-            const { status, admin_response } = req.body;
+            // Validate input body
+            const { error, value } = updateSubmissionStatusSchema.validate(req.body);
+            if (error) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Validation Error',
+                    errors: error.details.map(d => d.message)
+                });
+            }
+            const { status, admin_response } = value;
             
-            // TODO: Validate input data
-            // TODO: Validate that status is one of the allowed values
-            
-            // TODO: Retrieve and update submission in DB using ORM
             const submission = await Submission.findByPk(id);
             
             if (!submission) {
@@ -122,32 +165,50 @@ const adminController = {
                     message: 'Submission not found'
                 });
             }
+
+            // Agency Access Check: Ensure admin can only update submissions for their own agency
+            if (submission.agency_id !== adminAgencyId) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Forbidden: You are not authorized to update this submission.'
+                });
+            }
             
             // Update the fields
-            if (status) submission.status = status;
-            if (admin_response) submission.admin_response = admin_response;
+            submission.status = status;
+            submission.admin_response = admin_response !== undefined ? admin_response : submission.admin_response; // Keep old if not provided
+            // submission.updated_at will be handled by Sequelize automatically if timestamps: true
             
-            // Save the changes
             await submission.save();
             
+            // Refetch to include associations in the response, or selectively build the response object
+            const updatedSubmissionWithDetails = await Submission.findOne({
+                where: { id: submission.id },
+                include: [
+                    { model: Category, as: 'category', attributes: ['id', 'name'] },
+                    { model: Agency, as: 'agency', attributes: ['id', 'name'] }
+                ]
+            });
+
             return res.status(200).json({
                 success: true,
                 message: 'Submission updated successfully',
-                submission: {
-                    id: submission.id,
-                    ticket_id: submission.ticket_id,
-                    status: submission.status,
-                    admin_response: submission.admin_response,
-                    updated_at: submission.updated_at
-                }
+                data: updatedSubmissionWithDetails
             });
         } catch (error) {
-            // TODO: Implement error handling
             console.error('Error updating submission:', error);
+            // Handle potential Sequelize validation errors from model, if any
+            if (error.name === 'SequelizeValidationError') {
+                 return res.status(400).json({
+                    success: false,
+                    message: 'Database Validation Error',
+                    errors: error.errors.map(e => e.message)
+                });
+            }
             return res.status(500).json({
                 success: false,
-                message: 'Failed to update submission',
-                error: error.message
+                message: 'Failed to update submission.',
+                error: process.env.NODE_ENV === 'development' ? error.message : 'Internal Server Error'
             });
         }
     }
