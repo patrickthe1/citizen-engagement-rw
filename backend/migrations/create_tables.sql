@@ -7,8 +7,9 @@ DROP TABLE IF EXISTS agencies;
 -- Create agencies table
 CREATE TABLE agencies (
     id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    contact_email VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL UNIQUE,
+    contact_email VARCHAR(255),
+    contact_information TEXT, -- Added contact_information column
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );

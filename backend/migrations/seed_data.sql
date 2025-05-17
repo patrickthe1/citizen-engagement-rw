@@ -1,11 +1,11 @@
 -- Seed data for Citizen Engagement System database
 -- Agency data: Based on the Rwandan government structure from the research
-INSERT INTO agencies (name, contact_email, created_at, updated_at)
+INSERT INTO agencies (name, contact_email, contact_information, created_at, updated_at)
 VALUES 
-  ('Ministry of Local Government (MINALOC)', 'complaints@minaloc.gov.rw', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-  ('Rwanda Utilities Regulatory Authority (RURA)', 'complaints@rura.gov.rw', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-  ('Ministry of Health (MOH)', 'complaints@moh.gov.rw', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-  ('Ministry of Education (MINEDUC)', 'complaints@mineduc.gov.rw', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+  ('Ministry of Local Government (MINALOC)', 'complaints@minaloc.gov.rw', 'Contact: complaints@minaloc.gov.rw', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  ('Rwanda Utilities Regulatory Authority (RURA)', 'complaints@rura.gov.rw', 'Contact: complaints@rura.gov.rw', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  ('Ministry of Health (MOH)', 'complaints@moh.gov.rw', 'Contact: complaints@moh.gov.rw', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  ('Ministry of Education (MINEDUC)', 'complaints@mineduc.gov.rw', 'Contact: complaints@mineduc.gov.rw', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 -- Category data: Based on the research findings of common complaint areas
 INSERT INTO categories (name, description, agency_id, created_at, updated_at)
@@ -56,6 +56,7 @@ INSERT INTO submissions (
   subject, 
   description, 
   citizen_contact, 
+  language_preference, -- Ensure this was added if not already present from previous steps
   status, 
   admin_response, 
   created_at, 
@@ -68,6 +69,7 @@ VALUES (
   'Inconsistent Water Supply in Kimihurura Sector',
   'We have been experiencing water outages in the Kimihurura sector for the past week. Water is only available for 2 hours in the early morning. Many households are affected.',
   'example@citizen.rw',
+  'english', -- Assuming default or example
   'Received',
   NULL,
   CURRENT_TIMESTAMP,
