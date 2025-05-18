@@ -1,4 +1,5 @@
 const express = require('express');
+const session = require('express-session');
 const apiRoutes = require('./routes/api');
 const { testConnection } = require('./config/database');
 require('dotenv').config();
@@ -9,6 +10,18 @@ const port = process.env.PORT || 3000;
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Session middleware setup
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'your_default_session_secret', // Use an environment variable for the secret
+    resave: false,
+    saveUninitialized: true,
+    cookie: {
+        secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    }
+}));
 
 // Enable CORS
 app.use((req, res, next) => {

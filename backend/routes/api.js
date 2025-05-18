@@ -7,6 +7,9 @@ const agencyController = require('../controllers/agencyController');
 const categoryController = require('../controllers/categoryController');
 const adminController = require('../controllers/adminController');
 
+// Import middleware
+const { ensureAdminAuthenticated } = require('../middleware/authMiddleware');
+
 // Citizen routes
 // POST /api/submissions - Submit a new complaint
 router.post('/submissions', submissionController.createSubmission);
@@ -24,10 +27,10 @@ router.get('/categories', categoryController.getAllCategories);
 // POST /api/admin/login - Admin login
 router.post('/admin/login', adminController.login);
 
-// GET /api/admin/submissions - Get all submissions (admin only)
-router.get('/admin/submissions', adminController.getAllSubmissions);
+// GET /api/admin/submissions - Get all submissions (admin only, protected)
+router.get('/admin/submissions', ensureAdminAuthenticated, adminController.getAllSubmissions);
 
-// PUT /api/admin/submissions/:id - Update submission status/response (admin only)
-router.put('/admin/submissions/:id', adminController.updateSubmission);
+// PUT /api/admin/submissions/:id - Update submission status/response (admin only, protected)
+router.put('/admin/submissions/:id', ensureAdminAuthenticated, adminController.updateSubmission);
 
 module.exports = router;

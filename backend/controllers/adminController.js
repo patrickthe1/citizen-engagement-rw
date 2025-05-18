@@ -1,5 +1,7 @@
 const { User, Submission, Agency, Category } = require('../models');
 const Joi = require('joi'); // For status validation
+const bcrypt = require('bcrypt'); // For password hashing
+const saltRounds = 10; // For bcrypt
 
 // Allowed submission statuses
 const ALLOWED_STATUSES = ['Received', 'In Progress', 'Resolved', 'Closed'];
@@ -14,16 +16,33 @@ const updateSubmissionStatusSchema = Joi.object({
 const adminController = {
     // POST /api/admin/login - Admin login
     login: async (req, res) => {
+        console.log('Login attempt received.');
+        console.log('Request Content-Type Header:', req.headers['content-type']);
+        console.log('Raw Request Body:', req.body); // Log the body as received by express.json()
+
         try {
-            // TODO: Implement input validation
+            // Explicitly check if req.body is populated and is an object
+            if (!req.body || typeof req.body !== 'object' || req.body === null) {
+                console.error('Login failed: req.body is missing, not an object, or null. Ensure Content-Type is application/json and body is valid JSON.');
+                return res.status(400).json({
+                    success: false,
+                    message: 'Login failed: Request body is missing, not an object, or not in JSON format. Please ensure Content-Type is set to application/json and the body is valid JSON.',
+                });
+            }
+
             const { username, password } = req.body;
-            
-            // TODO: Implement actual authentication
-            // For MVP, this is a placeholder for future proper authentication
+
+            if (!username || !password) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Username and password are required.'
+                });
+            }
+
             const user = await User.findOne({ 
                 where: { username },
                 include: [
-                    { model: Agency, as: 'agency', attributes: ['id', 'name'] } // Added as: 'agency'
+                    { model: Agency, as: 'agency', attributes: ['id', 'name'] }
                 ]
             });
             
@@ -34,41 +53,46 @@ const adminController = {
                 });
             }
             
-            // TODO: Implement proper password check with hashing
-            // This is just a placeholder for the MVP structure
-            if (user.password_hash !== password) { // In a real app, use bcrypt.compare
+            const isMatch = await bcrypt.compare(password, user.password_hash);
+
+            if (!isMatch) {
                 return res.status(401).json({
                     success: false,
                     message: 'Invalid credentials'
                 });
             }
             
-            // TODO: Generate JWT token and set it in req.user for subsequent requests
-            // For now, we'll simulate req.user for other admin functions based on this login.
-            // This is NOT how it would work in production.
-            req.user = { // SIMULATING req.user for Phase 2 testing
+            // Store user information in session
+            req.session.user = {
                 id: user.id,
                 username: user.username,
-                agency_id: user.agency_id, // Crucial for Phase 2
+                agency_id: user.agency_id,
                 role: user.role
             };
             
             return res.status(200).json({
                 success: true,
-                message: 'Login successful (simulation for Phase 2)',
+                message: 'Login successful',
                 user: {
                     id: user.id,
                     username: user.username,
                     role: user.role,
-                    agency: user.agency ? { // Changed from user.Agency to user.agency to match alias
+                    agency: user.agency ? {
                         id: user.agency.id,
                         name: user.agency.name
                     } : null
                 }
-                // token: 'jwt-token-placeholder' // To be implemented
             });
         } catch (error) {
             console.error('Error during login:', error);
+            // Check if the error is the specific destructuring error due to req.body being undefined or null
+            if (error instanceof TypeError && error.message.toLowerCase().includes("cannot destructure property") && (error.message.toLowerCase().includes("of undefined") || error.message.toLowerCase().includes("of null"))) {
+                 return res.status(400).json({
+                    success: false,
+                    message: 'Login failed: Malformed request. Ensure Content-Type is application/json and the request body is correctly formatted.',
+                    error: process.env.NODE_ENV === 'development' ? error.message : 'Bad Request'
+                });
+            }
             return res.status(500).json({
                 success: false,
                 message: 'Login failed',
@@ -79,14 +103,14 @@ const adminController = {
     
     // GET /api/admin/submissions - Get submissions for the admin's agency
     getAllSubmissions: async (req, res) => {
-           // TEMPORARY FOR TESTING - REMOVE LATER
-    // Simulate a RURA admin being logged in
-    req.user = { agency_id: 2 }; // Assuming RURA's agency_id is 2. Adjust as per your seed_data.sql
-    // END TEMPORARY
-        // ASSUMPTION: req.user.agency_id is available from auth middleware
-        if (!req.user || req.user.agency_id === undefined) { // Check if agency_id is undefined or null
-            // This check is more for development; proper auth middleware would handle unauthorized access.
-            console.error('Auth Error: req.user.agency_id not available. Ensure login simulation or actual auth is working.');
+        // REMOVE TEMPORARY FOR TESTING 
+        // // Simulate a RURA admin being logged in
+        // req.user = { agency_id: 2 }; // Assuming RURA's agency_id is 2. Adjust as per your seed_data.sql
+        // END TEMPORARY
+        
+        // req.user should be populated by auth middleware
+        if (!req.user || req.user.agency_id === undefined) {
+            console.error('Auth Error: req.user or req.user.agency_id not available.');
             return res.status(401).json({
                 success: false,
                 message: 'Unauthorized: Admin agency information not available.'
@@ -127,21 +151,22 @@ const adminController = {
         }
     },
     
-    // PUT /api/admin/submissions/:id - Update submission status/response (admin only)
+    // PUT /api/admin/submissions/:id - Update submission status and admin response
     updateSubmission: async (req, res) => {
+        // REMOVE TEMPORARY FOR TESTING
+        // // Simulate a RURA admin being logged in
+        // req.user = { agency_id: 2 }; // Assuming RURA's agency_id is 2. Adjust as per your seed_data.sql
+        // END TEMPORARY
 
-           // TEMPORARY FOR TESTING - REMOVE LATER
-    // Simulate a RURA admin being logged in
-    req.user = { agency_id: 2 }; // Assuming RURA's agency_id is 2. Adjust as per your seed_data.sql
-    // END TEMPORARY
-        // ASSUMPTION: req.user.agency_id is available from auth middleware
-        if (!req.user || req.user.agency_id === undefined) { // Check if agency_id is undefined or null
-            console.error('Auth Error: req.user.agency_id not available. Ensure login simulation or actual auth is working.');
+        // req.user should be populated by auth middleware
+        if (!req.user || req.user.agency_id === undefined) {
+            console.error('Auth Error: req.user or req.user.agency_id not available.');
             return res.status(401).json({
                 success: false,
-                message: 'Unauthorized: Admin agency information not available.'
+                message: 'Unauthorized: Admin information not available.'
             });
         }
+
         const adminAgencyId = req.user.agency_id;
         const { id } = req.params;
 
