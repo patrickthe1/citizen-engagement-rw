@@ -46,21 +46,13 @@ module.exports = (sequelize, DataTypes) => {
       onUpdate: 'CASCADE',
       onDelete: 'SET NULL',
     },
-    createdAt: {
-      allowNull: false,
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW
-    },
-    updatedAt: {
-      allowNull: false,
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW
-    }
   }, {
     sequelize,
     modelName: 'Category',
     tableName: 'categories', // Changed to lowercase
-    timestamps: true
+    timestamps: true,        // Ensure timestamps are enabled
+    createdAt: 'created_at', // Map createdAt to the 'created_at' column
+    updatedAt: 'updated_at'  // Map updatedAt to the 'updated_at' column
   });
   return Category;
 };

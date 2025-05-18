@@ -13,6 +13,7 @@ const submissionController = {
     createSubmission: async (req, res) => {
         try {
             // 1. Validate input using Joi schema from categorizationAndValidation.js
+            // IMPORTANT: Ensure submissionValidationSchema in categorizationAndValidation.js includes an optional 'category_id' field (e.g., Joi.string().guid({ version: ['uuidv4'] }).allow(null, '') or Joi.number().integer().allow(null) depending on ID type).
             const { error, value } = validateSubmission(req.body);
             if (error) {
                 return res.status(400).json({
@@ -22,45 +23,77 @@ const submissionController = {
                 });
             }
 
-            const { subject, description, citizen_contact, language_preference } = value;
+            // Destructure validated data, including the optional category_id from frontend
+            const { subject, description, citizen_contact, language_preference, category_id: frontend_selected_category_id } = value;
 
-            // 2. Implement Simple AI Categorization (via categorizeSubmission utility)
-            // This is a basic keyword matching approach suitable for an MVP.
-            // It identifies a category name based on keywords in the description.
-            // Limitations:
-            // - Relies on a predefined keyword list in categorization_keywords.json.
-            // - May not be accurate for nuanced descriptions or complex language.
-            // - Does not understand context beyond keyword presence; scoring is simplistic.
-            // - For a production system, a more robust NLP solution (e.g., using machine learning models) would be significantly better.
-            const determinedCategoryName = categorizeSubmission(description, language_preference);
-            let category_id = null;
-            let agency_id = null;
-            let categoryDetails = null;
+            console.log('[DEBUG] Received frontend_selected_category_id:', frontend_selected_category_id); // Added for debugging
 
-            if (determinedCategoryName) {
-                categoryDetails = await getCategoryAndAgencyDetails(determinedCategoryName);
-                if (categoryDetails) {
-                    category_id = categoryDetails.category_id;
-                    agency_id = categoryDetails.agency_id;
+            let final_category_id = null;
+            let final_agency_id = null;
+
+            // 2. Prioritize category_id if provided by the frontend and is valid
+            if (frontend_selected_category_id) {
+                console.log(`[DEBUG] Frontend provided category_id: ${frontend_selected_category_id}. Attempting to use it.`);
+                try {
+                    const category = await Category.findByPk(frontend_selected_category_id);
+                    console.log('[DEBUG] Fetched category by Pk:', category ? category.toJSON() : null); // Added for debugging
+
+                    if (category && category.agency_id) { // Ensure category exists and has an agency_id
+                        final_category_id = category.id;
+                        final_agency_id = category.agency_id;
+                        console.log(`[DEBUG] Successfully used frontend category_id: ${final_category_id}, and associated agency_id: ${final_agency_id}. Skipping AI categorization.`);
+                    } else {
+                        if (!category) {
+                            console.warn(`[DEBUG] Frontend provided category_id ${frontend_selected_category_id} was not found in the database. Falling back to AI categorization.`);
+                        } else { // Category found but no agency_id
+                            console.warn(`[DEBUG] Category ${frontend_selected_category_id} (Name: ${category.name}) was found, but it has no associated agency_id (agency_id: ${category.agency_id}). Falling back to AI categorization / General category.`);
+                        }
+                        // Let it fall through to AI categorization if frontend ID is problematic
+                    }
+                } catch (e) {
+                    console.error(`Error fetching category by frontend_selected_category_id ${frontend_selected_category_id}:`, e);
+                    // Let it fall through to AI categorization
                 }
             }
 
-            // If no category is matched or details not found, assign to a default category/agency.
-            // For MVP, we'll try to find a 'General' category or leave it null if not set up.
-            // This requires 'General' category and its agency to be in the DB.
-            if (!category_id) {
-                const defaultCategoryDetails = await getCategoryAndAgencyDetails('General'); // Assuming 'General' category exists
-                if (defaultCategoryDetails) {
-                    category_id = defaultCategoryDetails.category_id;
-                    agency_id = defaultCategoryDetails.agency_id;
-                    console.log("Submission assigned to default 'General' category.");
+            // 3. Fallback to AI Categorization if not determined by frontend selection
+            if (!final_category_id) { // Only run if frontend selection didn't yield a category and agency
+                if (frontend_selected_category_id) { // Log if frontend tried but failed
+                    console.log("Frontend category_id was provided but could not be used (e.g., not found or no agency_id). Proceeding with AI categorization as fallback.");
                 } else {
-                    console.warn("Default 'General' category not found. Submission will have no category/agency.");
-                    // Depending on requirements, you might return an error or proceed without category/agency
+                    console.log("No category_id provided by frontend. Proceeding with AI categorization.");
+                }
+                
+                const determinedCategoryName = categorizeSubmission(description, language_preference);
+                let categoryDetailsAI = null; // Use a different variable name to avoid confusion
+
+                if (determinedCategoryName) {
+                    categoryDetailsAI = await getCategoryAndAgencyDetails(determinedCategoryName);
+                    if (categoryDetailsAI) {
+                        final_category_id = categoryDetailsAI.category_id;
+                        final_agency_id = categoryDetailsAI.agency_id;
+                        console.log(`AI categorization determined Category: ${determinedCategoryName} (ID: ${final_category_id}), Agency ID: ${final_agency_id}`);
+                    } else {
+                        console.log(`AI categorization determined Category Name: ${determinedCategoryName}, but no details found (ID/Agency).`);
+                    }
+                }
+
+                // If still no category (AI failed or no determined name), fall back to 'General'
+                if (!final_category_id) {
+                    console.log("AI categorization did not yield a valid category. Falling back to 'General' category.");
+                    const defaultCategoryDetails = await getCategoryAndAgencyDetails('General');
+                    if (defaultCategoryDetails) {
+                        final_category_id = defaultCategoryDetails.category_id;
+                        final_agency_id = defaultCategoryDetails.agency_id;
+                        console.log(`Submission assigned to default 'General' category. Category ID: ${final_category_id}, Agency ID: ${final_agency_id}`);
+                    } else {
+                        console.error("CRITICAL: Default 'General' category not found or has no agency. Submission will have null category/agency. Check seed_data.sql and Category model.");
+                        // For MVP, allow submission with nulls if schema permits and 'General' is misconfigured.
+                    }
                 }
             }
 
-            // 3. Generate unique ticket_id
+            // 4. Generate unique ticket_id
             let ticket_id;
             let isUnique = false;
             let attempts = 0;
@@ -84,23 +117,23 @@ const submissionController = {
                 });
             }
 
-            // 4. Set status
+            // 5. Set status
             const status = 'Received';
 
-            // 5. Save submission to DB
+            // 6. Save submission to DB
             const newSubmission = await Submission.create({
                 subject,
                 description,
                 citizen_contact,
-                category_id, 
-                agency_id,  
+                category_id: final_category_id, 
+                agency_id: final_agency_id,  
                 ticket_id,
                 status,
-                submission_date: new Date(),
-                language_preference // Ensure language_preference from validated input is passed
+                submission_date: new Date(), // Consider using Sequelize's default `createdAt` by removing this if `timestamps: true` is set in model
+                language_preference
             });
 
-            // 6. Return success response with the generated ticket ID
+            // 7. Return success response with the generated ticket ID
             return res.status(201).json({
                 success: true,
                 message: 'Submission received successfully.',

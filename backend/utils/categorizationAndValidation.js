@@ -92,7 +92,8 @@ const submissionSchema = Joi.object({
             'string.min': 'Contact information must be at least 5 characters long.',
             'string.max': 'Contact information cannot exceed 255 characters.'
         }),
-    language_preference: Joi.string().valid('english', 'kinyarwanda').optional().default('english')
+    language_preference: Joi.string().valid('english', 'kinyarwanda').optional().default('english'),
+    category_id: Joi.number().integer().allow(null).optional().empty(Joi.string().valid('')),
 });
 
 /**
