@@ -1,3 +1,8 @@
+/**
+ * Controller for handling citizen submissions.
+ * Includes creating new submissions and retrieving submission details by ticket ID.
+ */
+
 const { Submission, Category, Agency } = require('../models');
 const { generateTicketId } = require('../utils/helpers');
 const { categorizeSubmission, validateSubmission, getCategoryAndAgencyDetails } = require('../utils/categorizationAndValidation');
@@ -7,7 +12,7 @@ const submissionController = {
     // POST /api/submissions - Create a new submission
     createSubmission: async (req, res) => {
         try {
-            // 1. Validate input
+            // 1. Validate input using Joi schema from categorizationAndValidation.js
             const { error, value } = validateSubmission(req.body);
             if (error) {
                 return res.status(400).json({
@@ -19,14 +24,14 @@ const submissionController = {
 
             const { subject, description, citizen_contact, language_preference } = value;
 
-            // 2. Implement Simple AI Categorization
-            // This is a basic keyword matching approach.
+            // 2. Implement Simple AI Categorization (via categorizeSubmission utility)
+            // This is a basic keyword matching approach suitable for an MVP.
+            // It identifies a category name based on keywords in the description.
             // Limitations:
-            // - Relies on a predefined keyword list.
-            // - May not be accurate for nuanced descriptions.
-            // - Does not understand context beyond keyword presence.
-            // - Scoring is simplistic.
-            // For production, a more robust NLP solution (e.g., using machine learning models) would be better.
+            // - Relies on a predefined keyword list in categorization_keywords.json.
+            // - May not be accurate for nuanced descriptions or complex language.
+            // - Does not understand context beyond keyword presence; scoring is simplistic.
+            // - For a production system, a more robust NLP solution (e.g., using machine learning models) would be significantly better.
             const determinedCategoryName = categorizeSubmission(description, language_preference);
             let category_id = null;
             let agency_id = null;
@@ -95,11 +100,11 @@ const submissionController = {
                 language_preference // Ensure language_preference from validated input is passed
             });
 
-            // 6. Return success response
+            // 6. Return success response with the generated ticket ID
             return res.status(201).json({
                 success: true,
                 message: 'Submission received successfully.',
-                ticketId: newSubmission.ticket_id
+                data: { ticketId: newSubmission.ticket_id } // Consistent data wrapper
             });
 
         } catch (dbError) {
@@ -115,7 +120,7 @@ const submissionController = {
             return res.status(500).json({
                 success: false,
                 message: 'Internal Server Error while creating submission.',
-                error: process.env.NODE_ENV === 'development' ? dbError.message : undefined
+                error: process.env.NODE_ENV === 'development' ? dbError.message : 'An unexpected error occurred.' // More generic for production
             });
         }
     },
@@ -125,10 +130,10 @@ const submissionController = {
         try {
             const { ticketId } = req.params;
 
-            if (!ticketId) {
+            if (!ticketId || typeof ticketId !== 'string' || ticketId.trim() === '') { // Added more robust check
                 return res.status(400).json({
                     success: false,
-                    message: 'Ticket ID is required.'
+                    message: 'Valid Ticket ID is required.'
                 });
             }
 
@@ -157,7 +162,7 @@ const submissionController = {
 
             return res.status(200).json({
                 success: true,
-                data: submission
+                data: submission // Consistent data wrapper
             });
 
         } catch (error) {
@@ -165,7 +170,7 @@ const submissionController = {
             return res.status(500).json({
                 success: false,
                 message: 'Internal Server Error while fetching submission.',
-                error: process.env.NODE_ENV === 'development' ? error.message : undefined
+                error: process.env.NODE_ENV === 'development' ? error.message : 'An unexpected error occurred.' // More generic for production
             });
         }
     }

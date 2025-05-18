@@ -1,3 +1,10 @@
+/**
+ * Utility functions for submission categorization and validation.
+ * - `categorizeSubmission`: Implements a simple keyword-based AI for category assignment.
+ * - `validateSubmission`: Provides Joi schema validation for new submissions.
+ * - `getCategoryAndAgencyDetails`: Fetches category and agency IDs by category name.
+ */
+
 const Joi = require('joi');
 const fs = require('fs');
 const path = require('path');
@@ -18,8 +25,12 @@ try {
 
 /**
  * Categorize a submission based on keyword matching.
- * This is a simple MVP approach and has limitations.
- * For a production system, a more sophisticated NLP approach would be recommended.
+ * This is a simple MVP approach using keyword scoring. It has significant limitations:
+ * - Relies entirely on the predefined keywords in `categorization_keywords.json`.
+ * - Does not understand synonyms, context, or nuanced language.
+ * - Scoring is basic (sum of matched keyword lengths); more sophisticated weighting or TF-IDF could be an improvement.
+ * - May miscategorize or fail to categorize if keywords are not comprehensive or if descriptions are ambiguous.
+ * For a production system, a more robust NLP solution (e.g., using machine learning models, embeddings, or third-party NLP APIs) would be highly recommended.
  * @param {string} description - The submission description text.
  * @param {string} language - The language of the submission ('english' or 'kinyarwanda').
  * @returns {string | null} The most likely category name or null if no strong match.
@@ -94,7 +105,8 @@ function validateSubmission(submissionData) {
 }
 
 /**
- * Fetches category and associated agency ID.
+ * Fetches category and associated agency ID by category name.
+ * This is used to link a submission to the correct category and responsible agency.
  * @param {string} categoryName - The name of the category.
  * @returns {Promise<object|null>} Object with category_id and agency_id, or null if not found.
  */

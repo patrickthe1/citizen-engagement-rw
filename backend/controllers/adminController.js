@@ -1,3 +1,9 @@
+/**
+ * Controller for admin-specific functionalities.
+ * Includes admin login, retrieving submissions for an admin's agency,
+ * and updating submission status and responses.
+ */
+
 const { User, Submission, Agency, Category } = require('../models');
 const Joi = require('joi'); // For status validation
 const bcrypt = require('bcrypt'); // For password hashing
@@ -53,6 +59,11 @@ const adminController = {
                 });
             }
             
+            // --- MVP AUTHENTICATION --- 
+            // IMPORTANT: This is a simplified password check for MVP purposes only.
+            // It directly compares the provided password with the stored hash after bcrypt comparison.
+            // FOR PRODUCTION: Implement proper, secure authentication (e.g., JWT, OAuth, more robust session management).
+            // The current session management is basic and relies on express-session's default memory store (not suitable for production scaling).
             const isMatch = await bcrypt.compare(password, user.password_hash);
 
             if (!isMatch) {
@@ -73,7 +84,7 @@ const adminController = {
             return res.status(200).json({
                 success: true,
                 message: 'Login successful',
-                user: {
+                data: { // Consistent data wrapper for user info
                     id: user.id,
                     username: user.username,
                     role: user.role,
@@ -90,13 +101,13 @@ const adminController = {
                  return res.status(400).json({
                     success: false,
                     message: 'Login failed: Malformed request. Ensure Content-Type is application/json and the request body is correctly formatted.',
-                    error: process.env.NODE_ENV === 'development' ? error.message : 'Bad Request'
+                    error: process.env.NODE_ENV === 'development' ? error.message : 'Bad Request. Please check your input.' // More generic for production
                 });
             }
             return res.status(500).json({
                 success: false,
-                message: 'Login failed',
-                error: process.env.NODE_ENV === 'development' ? error.message : 'Internal Server Error'
+                message: 'Login failed due to an internal error.', // Slightly more specific message
+                error: process.env.NODE_ENV === 'development' ? error.message : 'An unexpected error occurred.'
             });
         }
     },
@@ -139,14 +150,14 @@ const adminController = {
             
             return res.status(200).json({
                 success: true,
-                data: submissions
+                data: submissions // Consistent data wrapper
             });
         } catch (error) {
             console.error('Error retrieving submissions for admin:', error);
             return res.status(500).json({
                 success: false,
                 message: 'Failed to retrieve submissions.',
-                error: process.env.NODE_ENV === 'development' ? error.message : 'Internal Server Error'
+                error: process.env.NODE_ENV === 'development' ? error.message : 'An unexpected error occurred.'
             });
         }
     },
@@ -169,6 +180,14 @@ const adminController = {
 
         const adminAgencyId = req.user.agency_id;
         const { id } = req.params;
+
+        // Validate ID parameter
+        if (!id || isNaN(parseInt(id))) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid Submission ID provided.'
+            });
+        }
 
         try {
             // Validate input body
@@ -218,7 +237,7 @@ const adminController = {
             return res.status(200).json({
                 success: true,
                 message: 'Submission updated successfully',
-                data: updatedSubmissionWithDetails
+                data: updatedSubmissionWithDetails // Consistent data wrapper
             });
         } catch (error) {
             console.error('Error updating submission:', error);
@@ -227,13 +246,13 @@ const adminController = {
                  return res.status(400).json({
                     success: false,
                     message: 'Database Validation Error',
-                    errors: error.errors.map(e => e.message)
+                    errors: error.errors.map(e => e.message) // Keep detailed Joi errors
                 });
             }
             return res.status(500).json({
                 success: false,
                 message: 'Failed to update submission.',
-                error: process.env.NODE_ENV === 'development' ? error.message : 'Internal Server Error'
+                error: process.env.NODE_ENV === 'development' ? error.message : 'An unexpected error occurred.'
             });
         }
     }

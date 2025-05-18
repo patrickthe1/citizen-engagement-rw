@@ -1,26 +1,28 @@
+/**
+ * Controller for category-related public data.
+ * Currently, only includes retrieving a list of all categories.
+ */
+
 const { Category } = require('../models');
 
-// Controller for category-related endpoints
 const categoryController = {
     // GET /api/categories - Get all categories
     getAllCategories: async (req, res) => {
         try {
-            // TODO: Retrieve categories from DB using ORM
             const categories = await Category.findAll({
                 attributes: ['id', 'name', 'description']
             });
             
             return res.status(200).json({
                 success: true,
-                categories
+                data: categories // Consistent data wrapper
             });
         } catch (error) {
-            // TODO: Implement error handling
             console.error('Error retrieving categories:', error);
             return res.status(500).json({
                 success: false,
-                message: 'Failed to retrieve categories',
-                error: error.message
+                message: 'Failed to retrieve categories.', // More specific message
+                error: process.env.NODE_ENV === 'development' ? error.message : 'An unexpected error occurred.'
             });
         }
     }

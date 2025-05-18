@@ -1,3 +1,9 @@
+/**
+ * Main server setup file for the Citizen Engagement System backend.
+ * Initializes Express, configures middleware (JSON parsing, URL encoding, CORS, sessions),
+ * sets up API routes, database connection testing, and global error handling.
+ */
+
 const express = require('express');
 const session = require('express-session');
 const apiRoutes = require('./routes/api');
@@ -13,7 +19,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Session middleware setup
 app.use(session({
-    secret: process.env.SESSION_SECRET || 'your_default_session_secret', // Use an environment variable for the secret
+    secret: process.env.SESSION_SECRET || 'default_insecure_session_secret_for_dev', // Use an environment variable for the secret
     resave: false,
     saveUninitialized: true,
     cookie: {
@@ -50,11 +56,11 @@ testConnection();
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).json({
+    console.error('Global error handler caught:', err.stack);
+    res.status(err.status || 500).json({
         success: false,
-        message: 'Internal Server Error',
-        error: process.env.NODE_ENV === 'development' ? err.message : undefined
+        message: err.message || 'Internal Server Error',
+        error: process.env.NODE_ENV === 'development' ? err.stack : (err.expose ? err.message : 'An unexpected error occurred')
     });
 });
 

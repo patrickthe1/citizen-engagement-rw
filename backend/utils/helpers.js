@@ -1,3 +1,8 @@
+/**
+ * General helper utilities for the application.
+ * - `generateTicketId`: Creates unique, date-based ticket IDs for submissions.
+ */
+
 const { Sequelize } = require('sequelize');
 // Using direct import to avoid circular dependency
 const { sequelize } = require('../config/database');

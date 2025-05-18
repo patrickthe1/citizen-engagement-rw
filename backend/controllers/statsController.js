@@ -1,3 +1,8 @@
+/**
+ * Controller for providing aggregated statistics about submissions.
+ * Used for the public-facing dashboard.
+ */
+
 const { Submission, Category, sequelize } = require('../models');
 
 const statsController = {
@@ -52,7 +57,7 @@ const statsController = {
             return res.status(500).json({
                 success: false,
                 message: 'Failed to retrieve statistics summary.',
-                error: process.env.NODE_ENV === 'development' ? error.message : 'Internal Server Error'
+                error: process.env.NODE_ENV === 'development' ? error.message : 'An unexpected error occurred.' // More generic for production
             });
         }
     }

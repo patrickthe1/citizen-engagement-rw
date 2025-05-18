@@ -1,3 +1,8 @@
+/**
+ * Main API router for the Citizen Engagement System.
+ * Defines all public and admin-protected routes, mapping them to controller functions.
+ */
+
 const express = require('express');
 const router = express.Router();
 
