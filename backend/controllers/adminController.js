@@ -7,6 +7,7 @@
 const { User, Submission, Agency, Category } = require('../models');
 const Joi = require('joi'); // For status validation
 const bcrypt = require('bcrypt'); // For password hashing
+const jwt = require('jsonwebtoken'); // For JWT generation
 const saltRounds = 10; // For bcrypt
 
 // Allowed submission statuses
@@ -73,7 +74,19 @@ const adminController = {
                 });
             }
             
-            // Store user information in session
+            // Generate JWT token
+            const token = jwt.sign(
+                { 
+                    id: user.id, 
+                    username: user.username, 
+                    role: user.role, 
+                    agency_id: user.agency_id 
+                },
+                process.env.JWT_SECRET || 'YOUR_FALLBACK_SECRET_KEY', // Use environment variable for secret
+                { expiresIn: '1h' } // Token expires in 1 hour
+            );
+
+            // Store user information in session (optional, if still using sessions for other purposes)
             req.session.user = {
                 id: user.id,
                 username: user.username,
@@ -85,13 +98,16 @@ const adminController = {
                 success: true,
                 message: 'Login successful',
                 data: { // Consistent data wrapper for user info
-                    id: user.id,
-                    username: user.username,
-                    role: user.role,
-                    agency: user.agency ? {
-                        id: user.agency.id,
-                        name: user.agency.name
-                    } : null
+                    user: { // Nest user details under a 'user' key
+                        id: user.id,
+                        username: user.username,
+                        role: user.role,
+                        agency: user.agency ? {
+                            id: user.agency.id,
+                            name: user.agency.name
+                        } : null
+                    },
+                    token: token // Include the JWT token in the response
                 }
             });
         } catch (error) {
