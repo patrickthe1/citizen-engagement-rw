@@ -6,6 +6,7 @@ const submissionController = require('../controllers/submissionController');
 const agencyController = require('../controllers/agencyController');
 const categoryController = require('../controllers/categoryController');
 const adminController = require('../controllers/adminController');
+const statsController = require('../controllers/statsController'); // Added statsController
 
 // Import middleware
 const { ensureAdminAuthenticated } = require('../middleware/authMiddleware');
@@ -22,6 +23,10 @@ router.get('/agencies', agencyController.getAllAgencies);
 
 // GET /api/categories - Get list of all categories
 router.get('/categories', categoryController.getAllCategories);
+
+// Statistics route (public)
+// GET /api/stats/summary - Get aggregated statistics for dashboard
+router.get('/stats/summary', statsController.getStatsSummary);
 
 // Admin routes
 // POST /api/admin/login - Admin login
