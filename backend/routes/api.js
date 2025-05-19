@@ -40,6 +40,9 @@ router.post('/admin/login', adminController.login);
 // GET /api/admin/submissions - Get all submissions (admin only, protected)
 router.get('/admin/submissions', ensureAdminAuthenticated, adminController.getAllSubmissions);
 
+// GET /api/admin/submissions/:id - Get a specific submission by ID (admin only, protected)
+router.get('/admin/submissions/:id', ensureAdminAuthenticated, adminController.getSubmissionById);
+
 // PUT /api/admin/submissions/:id - Update submission status/response (admin only, protected)
 router.put('/admin/submissions/:id', ensureAdminAuthenticated, adminController.updateSubmission);
 

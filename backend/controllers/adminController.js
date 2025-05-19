@@ -178,6 +178,59 @@ const adminController = {
         }
     },
     
+    // GET /api/admin/submissions/:id - Get a specific submission by ID for admin
+    getSubmissionById: async (req, res) => {
+        if (!req.user || req.user.agency_id === undefined) {
+            console.error('Auth Error: req.user or req.user.agency_id not available for getSubmissionById.');
+            return res.status(401).json({
+                success: false,
+                message: 'Unauthorized: Admin agency information not available.'
+            });
+        }
+
+        const adminAgencyId = req.user.agency_id;
+        const { id } = req.params;
+
+        if (!id || isNaN(parseInt(id))) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid submission ID provided.'
+            });
+        }
+
+        try {
+            const submission = await Submission.findOne({
+                where: { 
+                    id: parseInt(id),
+                    agency_id: adminAgencyId // Ensure admin can only access submissions within their agency
+                },
+                include: [
+                    { model: Category, as: 'category', attributes: ['id', 'name'] },
+                    { model: Agency, as: 'agency', attributes: ['id', 'name'] }
+                ]
+            });
+
+            if (!submission) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Submission not found or not accessible by this admin.'
+                });
+            }
+
+            return res.status(200).json({
+                success: true,
+                data: submission
+            });
+        } catch (error) {
+            console.error(`Error retrieving submission ID ${id} for admin:`, error);
+            return res.status(500).json({
+                success: false,
+                message: 'Failed to retrieve submission details.',
+                error: process.env.NODE_ENV === 'development' ? error.message : 'An unexpected error occurred.'
+            });
+        }
+    },
+    
     // PUT /api/admin/submissions/:id - Update submission status and admin response
     updateSubmission: async (req, res) => {
         // REMOVE TEMPORARY FOR TESTING
