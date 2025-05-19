@@ -8,7 +8,12 @@ const express = require('express');
 const session = require('express-session');
 const apiRoutes = require('./routes/api');
 const { testConnection } = require('./config/database');
-require('dotenv').config();
+
+// Only load dotenv in non-production environments
+// This is duplicated from database.js as a safeguard, in case server.js is loaded first
+if (process.env.NODE_ENV !== 'production') {
+    require('dotenv').config();
+}
 
 const app = express();
 const port = process.env.PORT || 3000;
